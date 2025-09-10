@@ -29,17 +29,59 @@ function setStatus(msg: string) {
   if (el) el.textContent = msg;
 }
 
+function setBusy(isBusy: boolean) {
+  const spinner = document.getElementById("spinner");
+  if (spinner) {
+    if (isBusy) {
+      spinner.classList.add("active");
+      spinner.setAttribute("aria-hidden", "false");
+    } else {
+      spinner.classList.remove("active");
+      spinner.setAttribute("aria-hidden", "true");
+    }
+  }
+  const buttons = Array.from(
+    document.querySelectorAll(
+      "#btn-review-selection,#btn-review-document,#btn-review-again,#btn-generate-summary,#btn-save-settings,#btn-toggle-key"
+    )
+  ) as any[];
+  buttons.forEach((b) => {
+    if (isBusy) b.setAttribute("disabled", "true");
+    else b.removeAttribute("disabled");
+  });
+}
+
 async function loadSettingsToUI() {
   const s = await loadApiSettings();
   const base = document.getElementById("api-base") as any;
-  const model = document.getElementById("api-model") as any;
+  const modelSel = document.getElementById("api-model") as any;
+  const modelCustom = document.getElementById("api-model-custom") as any;
   if (base) base.value = s.baseUrl || "https://api.openai.com/v1";
-  if (model) model.value = s.model || "gpt-4o-mini";
+  const savedModel = s.model || "gpt-4o-mini";
+  if (modelSel) {
+    const options = Array.from(modelSel.options || []).map((o: any) => o.value);
+    if (options.indexOf(savedModel) >= 0) {
+      modelSel.value = savedModel;
+      if (modelCustom) modelCustom.classList.add("app-hidden");
+    } else {
+      modelSel.value = "custom";
+      if (modelCustom) {
+        modelCustom.value = savedModel;
+        modelCustom.classList.remove("app-hidden");
+      }
+    }
+  }
+  // Do not auto-populate API key for safety; user can paste again.
 }
 
 async function readSettingsFromUI() {
   const baseUrl = (document.getElementById("api-base") as any)?.value?.trim();
-  const model = (document.getElementById("api-model") as any)?.value?.trim();
+  const selVal = (document.getElementById("api-model") as any)?.value?.trim();
+  let model = selVal;
+  if (selVal === "custom") {
+    const custom = (document.getElementById("api-model-custom") as any)?.value?.trim();
+    if (custom) model = custom;
+  }
   const apiKey = (document.getElementById("api-key") as any)?.value?.trim();
   await saveApiSettings({ baseUrl, model, apiKey: apiKey || undefined });
 }
@@ -78,72 +120,88 @@ async function insertSummaryAtEnd(context: Word.RequestContext, summaryText: str
 
 export async function reviewSelection() {
   setStatus("Reviewing selection...");
+  setBusy(true);
   lastComments = [];
   lastSummary = undefined;
   lastFocuses = getFocuses();
   lastCustom = getCustom();
+  try {
+    await Word.run(async (context) => {
+      const range = context.document.getSelection();
+      range.load(["text"]);
+      await context.sync();
 
-  await Word.run(async (context) => {
-    const range = context.document.getSelection();
-    range.load(["text"]);
-    await context.sync();
+      const text = (range.text || "").trim();
+      if (!text) {
+        setStatus("No selection found.");
+        return;
+      }
 
-    const text = (range.text || "").trim();
-    if (!text) {
-      setStatus("No selection found.");
-      return;
-    }
+      lastInput = text;
 
-    lastInput = text;
+      const { comments, summary } = await generateReviewComments(text, lastFocuses, lastCustom);
+      if (!comments.length) {
+        setStatus("No comments generated.");
+        return;
+      }
 
-    const { comments, summary } = await generateReviewComments(text, lastFocuses, lastCustom);
-    if (!comments.length) {
-      setStatus("No comments generated.");
-      return;
-    }
+      await insertCommentsForRange(context, range, comments);
 
-    await insertCommentsForRange(context, range, comments);
-
-    lastComments = comments;
-    lastSummary = summary;
-    setStatus(`Inserted ${comments.length} comment(s) on selection.`);
-  });
+      lastComments = comments;
+      lastSummary = summary;
+      const sumEl = document.getElementById("last-summary");
+      if (sumEl) sumEl.textContent = summary || "";
+      setStatus(`Inserted ${comments.length} comment(s) on selection.`);
+    });
+  } catch (err: any) {
+    setStatus(`Error: ${err?.message || err}`);
+  } finally {
+    setBusy(false);
+  }
 }
 
 export async function reviewDocument() {
   setStatus("Reviewing document...");
+  setBusy(true);
   lastComments = [];
   lastSummary = undefined;
   lastFocuses = getFocuses();
   lastCustom = getCustom();
+  try {
+    await Word.run(async (context) => {
+      const body = context.document.body;
+      body.load("text");
+      await context.sync();
 
-  await Word.run(async (context) => {
-    const body = context.document.body;
-    body.load("text");
-    await context.sync();
+      const fullText = (body.text || "").trim();
+      if (!fullText) {
+        setStatus("Document is empty.");
+        return;
+      }
 
-    const fullText = (body.text || "").trim();
-    if (!fullText) {
-      setStatus("Document is empty.");
-      return;
-    }
+      const MAX = 7000;
+      const input = fullText.length > MAX ? fullText.slice(0, MAX) : fullText;
+      lastInput = input;
 
-    const MAX = 7000;
-    const input = fullText.length > MAX ? fullText.slice(0, MAX) : fullText;
-    lastInput = input;
+      const { comments, summary } = await generateReviewComments(input, lastFocuses, lastCustom);
+      if (!comments.length) {
+        setStatus("No comments generated.");
+        return;
+      }
 
-    const { comments, summary } = await generateReviewComments(input, lastFocuses, lastCustom);
-    if (!comments.length) {
-      setStatus("No comments generated.");
-      return;
-    }
+      await insertCommentsForRange(context, body, comments);
 
-  await insertCommentsForRange(context, body, comments);
-
-    lastComments = comments;
-    lastSummary = summary;
-    setStatus(`Inserted ${comments.length} comment(s) across document.`);
-  });
+      lastComments = comments;
+      lastSummary = summary;
+      const sumEl = document.getElementById("last-summary");
+      if (sumEl) sumEl.textContent = summary || "";
+      setStatus(`Inserted ${comments.length} comment(s) across document.`);
+    });
+  } catch (err: any) {
+    setStatus(`Error: ${err?.message || err}`);
+  } finally {
+    setBusy(false);
+  }
 }
 
 export async function reviewAgain() {
@@ -152,22 +210,31 @@ export async function reviewAgain() {
     return;
   }
   setStatus("Reviewing again with same settings...");
-  await Word.run(async (context) => {
-  const target = context.document.body;
-    await context.sync();
+  setBusy(true);
+  try {
+    await Word.run(async (context) => {
+      const target = context.document.body;
+      await context.sync();
 
-    const { comments, summary } = await generateReviewComments(lastInput!, lastFocuses, lastCustom);
-    if (!comments.length) {
-      setStatus("No new comments generated.");
-      return;
-    }
+      const { comments, summary } = await generateReviewComments(lastInput!, lastFocuses, lastCustom);
+      if (!comments.length) {
+        setStatus("No new comments generated.");
+        return;
+      }
 
-    await insertCommentsForRange(context, target, comments);
+      await insertCommentsForRange(context, target, comments);
 
-    lastComments = comments;
-    lastSummary = summary;
-    setStatus(`Inserted ${comments.length} additional comment(s).`);
-  });
+      lastComments = comments;
+      lastSummary = summary;
+      const sumEl = document.getElementById("last-summary");
+      if (sumEl) sumEl.textContent = summary || "";
+      setStatus(`Inserted ${comments.length} additional comment(s).`);
+    });
+  } catch (err: any) {
+    setStatus(`Error: ${err?.message || err}`);
+  } finally {
+    setBusy(false);
+  }
 }
 
 export async function insertSummaryReport() {
@@ -185,19 +252,100 @@ Office.onReady((info) => {
   if (info.host === Office.HostType.Word) {
     const sideload = document.getElementById("sideload-msg");
     const body = document.getElementById("app-body");
+    const boot = document.getElementById("boot-overlay");
     if (sideload) sideload.style.display = "none";
     if (body) body.style.display = "block";
     loadSettingsToUI().catch(() => {});
-  const saveBtn = document.getElementById("btn-save-settings");
-  if (saveBtn) saveBtn.onclick = () => readSettingsFromUI().then(() => setStatus("Settings saved."));
-  const selBtn = document.getElementById("btn-review-selection");
-  if (selBtn) selBtn.onclick = reviewSelection;
-  const docBtn = document.getElementById("btn-review-document");
-  if (docBtn) docBtn.onclick = reviewDocument;
-  const againBtn = document.getElementById("btn-review-again");
-  if (againBtn) againBtn.onclick = reviewAgain;
-  const sumBtn = document.getElementById("btn-generate-summary");
-  if (sumBtn) sumBtn.onclick = insertSummaryReport;
+    if (boot) boot.classList.remove("active");
+
+    const saveBtn = document.getElementById("btn-save-settings");
+    if (saveBtn) {
+      saveBtn.onclick = async () => {
+        setBusy(true);
+        try {
+          await readSettingsFromUI();
+          setStatus("Settings saved.");
+        } finally {
+          setBusy(false);
+        }
+      };
+    }
+
+    const toggleKeyBtn = document.getElementById("btn-toggle-key");
+    if (toggleKeyBtn) {
+      toggleKeyBtn.onclick = () => {
+        const input = document.getElementById("api-key") as any;
+        if (!input) return;
+        const showing = input.type === "text";
+        input.type = showing ? "password" : "text";
+        const label = toggleKeyBtn.querySelector(".ms-Button-label") as any;
+        if (label) label.textContent = showing ? "Show" : "Hide";
+      };
+    }
+
+    const preset = document.getElementById("preset-select") as any;
+    if (preset) {
+      preset.onchange = () => {
+        const v = preset.value;
+        const boxes = Array.from(document.querySelectorAll("input.focus")) as any[];
+        const set = (name: string, val: boolean) => {
+          const b = boxes.find((x) => x.value === name);
+          if (b) b.checked = val;
+        };
+        if (v === "grammar-clarity") {
+          boxes.forEach((b) => (b.checked = false));
+          set("grammar", true);
+          set("clarity", true);
+        } else if (v === "structure-argument") {
+          boxes.forEach((b) => (b.checked = false));
+          set("structure", true);
+          set("argument strength", true);
+        } else if (v === "citations") {
+          boxes.forEach((b) => (b.checked = false));
+          set("citation check", true);
+        } else if (v === "comprehensive") {
+          boxes.forEach((b) => (b.checked = true));
+        }
+      };
+    }
+
+    const modelSel = document.getElementById("api-model") as any;
+    if (modelSel) {
+      modelSel.onchange = () => {
+        const isCustom = modelSel.value === "custom";
+        const modelCustom = document.getElementById("api-model-custom") as any;
+        if (modelCustom) {
+          if (isCustom) modelCustom.classList.remove("app-hidden");
+          else modelCustom.classList.add("app-hidden");
+        }
+      };
+    }
+
+    const selBtn = document.getElementById("btn-review-selection");
+    if (selBtn) selBtn.onclick = reviewSelection;
+    const docBtn = document.getElementById("btn-review-document");
+    if (docBtn) docBtn.onclick = reviewDocument;
+    const againBtn = document.getElementById("btn-review-again");
+    if (againBtn) againBtn.onclick = reviewAgain;
+    const sumBtn = document.getElementById("btn-generate-summary");
+    if (sumBtn) sumBtn.onclick = insertSummaryReport;
+
+    // Accordion toggle for Connection section
+    const acc = document.getElementById("connection-accordion");
+    const accT = document.getElementById("connection-toggle");
+    if (acc && accT) {
+      accT.onclick = () => {
+        const isCollapsed = acc.classList.contains("collapsed");
+        if (isCollapsed) {
+          acc.classList.remove("collapsed");
+          accT.setAttribute("aria-expanded", "true");
+        } else {
+          acc.classList.add("collapsed");
+          accT.setAttribute("aria-expanded", "false");
+        }
+      };
+    }
+
     setStatus("Ready.");
   }
 });

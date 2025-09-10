@@ -21,61 +21,126 @@
 </head>
 
 <body class="ms-font-m ms-welcome ms-Fabric">
-    <header class="ms-welcome__header ms-bgColor-neutralLighter">
-        <img width="90" height="90" src="../../assets/logo-filled.png" alt="ReviewMate" title="ReviewMate" />
-        <h1 class="ms-font-su">ReviewMate</h1>
-        <p class="ms-font-m">AI-powered peer review inside Word</p>
-    </header>
+    <div id="boot-overlay" class="boot-overlay active" aria-hidden="false">
+        <div class="center">
+            <div class="boot-spinner"></div>
+            <div class="boot-text">Loading ReviewMate…</div>
+        </div>
+    </div>
+    <!-- <header class="ms-welcome__header ms-bgColor-neutralLighter">
+        <div class="brand">
+            <img class="brand-logo" src="../../assets/outline.png" alt="ReviewMate" title="ReviewMate" />
+            <div class="brand-text">
+                <h1 class="brand-title">ReviewMate</h1>
+                <p class="brand-subtitle">AI-powered peer review inside Word</p>
+            </div>
+        </div>
+    </header> -->
+    <!-- <section class="section card centered">
+        <div class="brand">
+            <img class="brand-logo" src="../../assets/outline.png" alt="ReviewMate" title="ReviewMate" />
+            <div class="brand-text">
+                <h1 class="brand-title">ReviewMate</h1>
+                <p class="brand-subtitle">AI-powered peer review inside Word</p>
+            </div>
+        </div>
+    </section> -->
+    <div class="section ms-welcome__header ms-bgColor-neutralLighter">
+            <img class="brand-logo" src="../../assets/outline.png" alt="ReviewMate" title="ReviewMate" />
+            <div class="brand-text">
+                <h1 class="brand-title">ReviewMate</h1>
+                <p class="brand-subtitle">AI-powered peer review inside Word</p>
+            </div>
+        </div>
     <section id="sideload-msg" class="ms-welcome__main">
         <h2 class="ms-font-xl">Please <a target="_blank" rel="noopener noreferrer" href="https://learn.microsoft.com/office/dev/add-ins/testing/test-debug-office-add-ins#sideload-an-office-add-in-for-testing">sideload</a> your add-in to see app body.</h2>
     </section>
     <main id="app-body" class="ms-welcome__main app-hidden">
-        <section class="section">
-            <h2 class="ms-font-xl">Settings</h2>
-            <div class="row gap-sm wrap">
-                <label class="flex-1 min-220">
-                    <div class="ms-font-s">API Base URL</div>
-                    <input id="api-base" class="ms-TextField-field" type="text" value="https://api.openai.com/v1" />
-                </label>
-                <label class="flex-1 min-220">
-                    <div class="ms-font-s">Model</div>
-                    <input id="api-model" class="ms-TextField-field" type="text" value="gpt-4o-mini" />
-                </label>
-                <label class="flex-1 min-220">
-                    <div class="ms-font-s">API Key</div>
-                    <input id="api-key" class="ms-TextField-field" type="password" placeholder="sk-..." />
-                </label>
-                <div>
-                    <button id="btn-save-settings" class="ms-Button"><span class="ms-Button-label">Save</span></button>
+        <section class="section card accordion collapsed" id="connection-accordion">
+            <button class="accordion-toggle" id="connection-toggle" aria-expanded="false" aria-controls="connection-content">
+                <span class="caret" aria-hidden="true"></span>
+                <span class="title">System Configurations</span>
+            </button>
+            <div class="accordion-content" id="connection-content">
+            <div class="fields grid-2">
+                <div class="field">
+                    <label for="api-base" class="label">API Base URL</label>
+                    <input id="api-base" class="input" type="text" value="https://api.openai.com/v1" aria-describedby="api-base-help" />
+                    <div id="api-base-help" class="help">Use your provider endpoint. OpenAI default shown.</div>
+                </div>
+                <div class="field">
+                    <label for="api-model" class="label">Model</label>
+                    <select id="api-model" class="input" aria-describedby="api-model-help">
+                        <option value="gpt-4o-mini" selected>gpt-4o-mini</option>
+                        <option value="gpt-4o">gpt-4o</option>
+                        <option value="gpt-4.1-mini">gpt-4.1-mini</option>
+                        <option value="o3-mini">o3-mini</option>
+                        <option value="gpt-3.5-turbo">gpt-3.5-turbo</option>
+                        <option value="custom">Custom…</option>
+                    </select>
+                    <input id="api-model-custom" class="input app-hidden" type="text" placeholder="Enter custom model" />
+                    <div id="api-model-help" class="help">Choose a common model or select Custom to enter another.</div>
+                </div>
+                <div class="field">
+                    <label for="api-key" class="label">API Key</label>
+                    <div class="inline">
+                        <input id="api-key" class="input" type="password" placeholder="sk-..." />
+                        <button id="btn-toggle-key" class="ms-Button sm btn-outline"><span class="ms-Button-label">Show</span></button>
+                    </div>
+                </div>
+                <div class="field actions">
+                    <button id="btn-save-settings" class="ms-Button primary"><span class="ms-Button-label">Save Settings</span></button>
+                </div>
+                <div class="footnote">SSettings are stored locally and only used to call your configured provider.</div>
+               
+            </div>
+            </div>
+        </section>
+
+        <section class="section card">
+            <h2 class="ms-font-xl">Review focus</h2>
+            <div class="fields">
+                <div class="field">
+                    <label for="preset-select" class="label">Preset</label>
+                    <select id="preset-select" class="input">
+                        <option value="custom">Custom</option>
+                        <option value="grammar-clarity">Grammar + Clarity</option>
+                        <option value="structure-argument">Structure + Argument strength</option>
+                        <option value="citations">Citation check</option>
+                        <option value="comprehensive">Comprehensive</option>
+                    </select>
+                </div>
+                <div class="field checkrow">
+                    <label><input type="checkbox" class="focus" value="grammar" checked /> Grammar</label>
+                    <label><input type="checkbox" class="focus" value="clarity" checked /> Clarity</label>
+                    <label><input type="checkbox" class="focus" value="structure" /> Structure</label>
+                    <label><input type="checkbox" class="focus" value="argument strength" /> Argument strength</label>
+                    <label><input type="checkbox" class="focus" value="citation check" /> Citation check</label>
+                </div>
+                <div class="field">
+                    <label for="custom-instructions" class="label">Additional instructions (optional)</label>
+                    <textarea id="custom-instructions" class="input text" rows="3" title="Additional instructions"></textarea>
                 </div>
             </div>
-            <p class="ms-font-xs">Your settings are stored locally (Office storage/session) and not sent anywhere except the LLM provider you choose.</p>
         </section>
 
-        <section class="section mt-md">
-            <h2 class="ms-font-xl">Review focus</h2>
-            <div class="row gap-md wrap">
-                <label><input type="checkbox" class="focus" value="grammar" checked/> Grammar</label>
-                <label><input type="checkbox" class="focus" value="clarity" checked/> Clarity</label>
-                <label><input type="checkbox" class="focus" value="structure" /> Structure</label>
-                <label><input type="checkbox" class="focus" value="argument strength" /> Argument strength</label>
-                <label><input type="checkbox" class="focus" value="citation check" /> Citation check</label>
-            </div>
-            <div class="mt-sm">
-                <div class="ms-font-s">Additional instructions (optional)</div>
-                <textarea id="custom-instructions" class="ms-TextField-field w-100" rows="3" title="Additional instructions"></textarea>
-            </div>
-        </section>
-
-        <section class="section mt-md">
+        <section class="section card">
             <h2 class="ms-font-xl">Actions</h2>
-            <div class="row gap-sm wrap">
-                <button id="btn-review-selection" class="ms-Button ms-Button--hero"><span class="ms-Button-label">Review selection</span></button>
-                <button id="btn-review-document" class="ms-Button ms-Button--hero"><span class="ms-Button-label">Review document</span></button>
-                <button id="btn-review-again" class="ms-Button"><span class="ms-Button-label">Review again</span></button>
-                <button id="btn-generate-summary" class="ms-Button"><span class="ms-Button-label">Insert summary report</span></button>
+            <div class="fields">
+                <div class="field actions action-bar">
+                    <button id="btn-review-selection" class="ms-Button action-btn btn-outline"><span class="ms-Button-label">Review selection</span></button>
+                    <button id="btn-review-document" class="ms-Button action-btn btn-outline"><span class="ms-Button-label">Review document</span></button>
+                    <button id="btn-review-again" class="ms-Button action-btn btn-outline"><span class="ms-Button-label">Review again</span></button>
+                    <button id="btn-generate-summary" class="ms-Button action-btn btn-outline"><span class="ms-Button-label">Insert summary report</span></button>
+                </div>
+                <div class="field statusrow">
+                    <div class="spinner" id="spinner" aria-hidden="true"></div>
+                    <div id="status" class="status ms-font-s" role="status" aria-live="polite"></div>
+                </div>
+                <div class="field">
+                    <div id="last-summary" class="summary ms-font-s" aria-live="polite"></div>
+                </div>
             </div>
-            <div id="status" class="ms-font-s status"></div>
         </section>
     </main>
 </body>
