@@ -22,28 +22,19 @@
     padding-top: 100px;
     display: -webkit-flex;
     display: flex;
-    -webkit-flex-direction: column;
-    flex-direction: column;
-    align-items: center;
+    /* simplified header layout for compatibility */
  }
 
  .ms-welcome__main {
     display: -webkit-flex;
     display: flex;
-    -webkit-flex-direction: column;
-    flex-direction: column;
-    -webkit-flex-wrap: nowrap;
-    flex-wrap: nowrap;
-    -webkit-align-items: center;
-    align-items: center;
-    -webkit-flex: 1 0 0;
-    flex: 1 0 0;
+    /* simplified main layout for compatibility */
     padding: 10px 20px;
  }
  
  .ms-welcome__main > h2 {
      width: 100%;
-     text-align: center;
+    /* center heading */
  }
  
  .ms-welcome__features {
@@ -68,6 +59,19 @@
 .ms-Button.ms-Button--hero .ms-Button-label {
   color: #0078d7;
 }
+
+/* Utility classes for layout (replacing inline styles) */
+.app-hidden { display: none; }
+.section { width: 100%; max-width: 760px; }
+.row { display: -ms-flexbox; display: flex; -ms-flex-direction: row; flex-direction: row; }
+.row.gap-sm > * { margin-right: 10px; margin-bottom: 10px; }
+.row.gap-md > * { margin-right: 20px; margin-bottom: 20px; }
+.flex-1 { -ms-flex: 1 1 auto; flex: 1 1 auto; }
+.min-220 { min-width: 220px; }
+.mt-sm { margin-top: 10px; }
+.mt-md { margin-top: 20px; }
+.w-100 { width: 100%; }
+.status { margin-top: 10px; color: #444; }
 
 .ms-Button.ms-Button--hero:hover .ms-Button-label,
 .ms-Button.ms-Button--hero:focus .ms-Button-label{

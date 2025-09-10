@@ -8,8 +8,8 @@
         "full": "Contoso Task Pane Add-in"
     },
     "description": {
-        "short": "A template to get started.",
-        "full": "This is the template to get started."
+        "short": "ReviewMate: your collaborative partner for peer review.",
+        "full": "ReviewMate is an AI-powered Word add-in that enhances your peer review process by providing real-time suggestions, grammar checks, and collaborative features to streamline document editing and feedback."
     },
     "developer": {
         "name": "Contoso",
@@ -37,7 +37,10 @@
         }
     },
     "validDomains": [
-        "contoso.com"
+        "contoso.com",
+        "api.openai.com",
+        "localhost",
+        "127.0.0.1"
     ],
     "extensions": [
         {
