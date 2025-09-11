@@ -27,35 +27,20 @@
             <div class="boot-text">Loading ReviewMate…</div>
         </div>
     </div>
-    <!-- <header class="ms-welcome__header ms-bgColor-neutralLighter">
-        <div class="brand">
-            <img class="brand-logo" src="../../assets/outline.png" alt="ReviewMate" title="ReviewMate" />
-            <div class="brand-text">
-                <h1 class="brand-title">ReviewMate</h1>
-                <p class="brand-subtitle">AI-powered peer review inside Word</p>
-            </div>
-        </div>
-    </header> -->
-    <!-- <section class="section card centered">
-        <div class="brand">
-            <img class="brand-logo" src="../../assets/outline.png" alt="ReviewMate" title="ReviewMate" />
-            <div class="brand-text">
-                <h1 class="brand-title">ReviewMate</h1>
-                <p class="brand-subtitle">AI-powered peer review inside Word</p>
-            </div>
-        </div>
-    </section> -->
-    <div class="section ms-welcome__header ms-bgColor-neutralLighter">
-            <img class="brand-logo" src="../../assets/outline.png" alt="ReviewMate" title="ReviewMate" />
-            <div class="brand-text">
-                <h1 class="brand-title">ReviewMate</h1>
-                <p class="brand-subtitle">AI-powered peer review inside Word</p>
-            </div>
-        </div>
+
+
     <section id="sideload-msg" class="ms-welcome__main">
         <h2 class="ms-font-xl">Please <a target="_blank" rel="noopener noreferrer" href="https://learn.microsoft.com/office/dev/add-ins/testing/test-debug-office-add-ins#sideload-an-office-add-in-for-testing">sideload</a> your add-in to see app body.</h2>
     </section>
     <main id="app-body" class="ms-welcome__main app-hidden">
+        <!-- center this content: New header section -->
+        <section class="section card hero-header">
+            <div class="hero-center">
+                <h1 class="brand-title">ReviewMate</h1>
+                <p class="brand-subtitle">AI-powered peer review inside Word</p>
+                <p class="brand-subtitle">@2025 by <a href="https://www.linkedin.com/in/prince-samuel-941956165/" target="_blank" rel="noopener noreferrer">Prince Samuel Kyeremanteng</a></p>
+            </div>
+        </section>
         <section class="section card accordion collapsed" id="connection-accordion">
             <button class="accordion-toggle" id="connection-toggle" aria-expanded="false" aria-controls="connection-content">
                 <span class="caret" aria-hidden="true"></span>
@@ -87,6 +72,7 @@
                         <input id="api-key" class="input" type="password" placeholder="sk-..." />
                         <button id="btn-toggle-key" class="ms-Button sm btn-outline"><span class="ms-Button-label">Show</span></button>
                     </div>
+                    <div class="help">Create an API key in your <a href="https://platform.openai.com/api-keys">OpenAI account</a> settings.</div>
                 </div>
                 <div class="field actions">
                     <button id="btn-save-settings" class="ms-Button primary"><span class="ms-Button-label">Save Settings</span></button>

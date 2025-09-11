@@ -22,6 +22,7 @@
     padding-top: 24px;
     display: -webkit-flex;
     display: flex;
+    margin: auto;
     /* simplified header layout for compatibility */
  }
 /* Brand header refinement */
@@ -106,6 +107,12 @@ b {
     transition: box-shadow .2s ease, transform .2s ease;
 }
 .card:hover { box-shadow: 0 6px 18px rgba(0,0,0,0.08); -webkit-transform: translateY(-1px); transform: translateY(-1px); }
+
+/* Hero header centering */
+.hero-header { position: relative; min-height: 96px; }
+.hero-header .hero-center { position: absolute; top: 50%; left: 50%; -webkit-transform: translate(-50%,-50%); transform: translate(-50%,-50%); width: 100%; display: -ms-flexbox; display: flex; -ms-flex-direction: column; flex-direction: column; -ms-flex-align: center; }
+.hero-header .hero-center h1 { margin: 0 auto 4px; }
+.hero-header .hero-center p { margin: 0 auto; font-size: 12px; color: #605e5c; }
 
 .ms-welcome__main { -webkit-animation: fadeIn .25s ease-out both; animation: fadeIn .25s ease-out both; }
 @-webkit-keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
