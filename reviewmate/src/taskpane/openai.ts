@@ -180,3 +180,94 @@ export async function generateReviewComments(
 
   return { comments: norm.slice(0, 10), summary };
 }
+
+async function callSimpleCompletion(prompt: string, settings?: Partial<ApiSettings>): Promise<string> {
+  const cfg = { ...(await loadApiSettings()), ...(settings || {}) } as ApiSettings;
+  if (!cfg.apiKey) throw new Error("Missing API key. Please set it in Settings.");
+  const res = await window.fetch(`${cfg.baseUrl.replace(/\/+$/, "")}/chat/completions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${cfg.apiKey}` },
+    body: JSON.stringify({
+      model: cfg.model,
+      messages: [
+        { role: "system", content: "You are a precise writing assistant." },
+        { role: "user", content: prompt },
+      ],
+      temperature: 0.4,
+    }),
+  });
+  if (!res.ok) {
+    const t = await res.text();
+    throw new Error(`LLM error: ${res.status} ${res.statusText} - ${t}`);
+  }
+  const data = await res.json();
+  const content = data?.choices?.[0]?.message?.content || "";
+  return content.trim();
+}
+
+export async function generateTrimmedText(
+  input: string,
+  maxChars: number = 0,
+  settings?: Partial<ApiSettings>
+): Promise<string> {
+  const target = maxChars && maxChars > 50 ? `Limit to about ${maxChars} characters (not strict).` : "Keep concise.";
+  const prompt = [
+    "Rewrite the following text into a significantly shorter version while preserving all essential meaning and intent.",
+    "Maintain clarity and formal academic tone.",
+    target,
+    "Return only the rewritten text. No preface or explanation.",
+    input,
+  ].join("\n");
+  return callSimpleCompletion(prompt, settings);
+}
+
+export async function generateParaphrasedText(
+  input: string,
+  variants: number = 1,
+  settings?: Partial<ApiSettings>
+): Promise<string[]> {
+  const n = Math.min(Math.max(variants, 1), 3);
+  const prompt = [
+    `Paraphrase the following text into ${n} distinct high-quality alternative version(s).`,
+    "Each version must retain the original meaning, maintain a clear academic/professional tone, and vary BOTH wording and sentence structure.",
+    "Output format:",
+    "Variant 1: <first paraphrase on same line>",
+    "Variant 2: <second paraphrase on same line> (etc)",
+    "Do NOT add explanations or any other text before or after the variants.",
+    "If you cannot paraphrase, repeat the original text as Variant 1.",
+    input,
+  ].join("\n");
+
+  const raw = await callSimpleCompletion(prompt, settings);
+  const text = raw.trim();
+  if (!text) return [];
+
+  const lines = text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => !!l);
+
+  // Attempt structured multi-line aggregation: capture header lines and following continuation lines until next header
+  const variantsOut: string[] = [];
+  let current: { index: number; content: string } | null = null;
+  const headerRegex = /^Variant\s+(\d+)\s*:?\s*(.*)$/i;
+  for (const ln of lines) {
+    const header = ln.match(headerRegex);
+    if (header) {
+      // Push previous
+      if (current) variantsOut.push(current.content.trim());
+      const idx = parseInt(header[1], 10);
+      const rest = header[2] || "";
+      current = { index: idx, content: rest };
+    } else if (current) {
+      // continuation line
+      current.content += (current.content ? " " : "") + ln;
+    }
+  }
+  if (current) variantsOut.push(current.content.trim());
+
+  // Fallback: if nothing matched, treat entire raw as single variant
+  const cleaned = variantsOut.map((v) => v.trim()).filter((v) => v.length > 0);
+  if (!cleaned.length) return [text];
+  return cleaned.slice(0, n);
+}

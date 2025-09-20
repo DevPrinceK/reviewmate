@@ -5,7 +5,14 @@
 
 /* global document, Office, Word */
 
-import { generateReviewComments, loadApiSettings, saveApiSettings, type ReviewComment } from "./openai";
+import {
+  generateReviewComments,
+  generateTrimmedText,
+  generateParaphrasedText,
+  loadApiSettings,
+  saveApiSettings,
+  type ReviewComment,
+} from "./openai";
 
 let lastInput: string | null = null;
 let lastFocuses: string[] = [];
@@ -42,7 +49,7 @@ function setBusy(isBusy: boolean) {
   }
   const buttons = Array.from(
     document.querySelectorAll(
-      "#btn-review-selection,#btn-review-document,#btn-review-again,#btn-generate-summary,#btn-save-settings,#btn-toggle-key"
+      "#btn-review-selection,#btn-review-document,#btn-review-again,#btn-generate-summary,#btn-save-settings,#btn-toggle-key,#btn-trim-selection,#btn-paraphrase-selection"
     )
   ) as any[];
   buttons.forEach((b) => {
@@ -237,6 +244,65 @@ export async function reviewAgain() {
   }
 }
 
+export async function trimSelection() {
+  setStatus("Trimming selection...");
+  setBusy(true);
+  try {
+    await Word.run(async (context) => {
+      const range = context.document.getSelection();
+      range.load(["text"]);
+      await context.sync();
+      const text = (range.text || "").trim();
+      if (!text) {
+        setStatus("No selection found.");
+        return;
+      }
+      const trimmed = await generateTrimmedText(text);
+      if (!trimmed) {
+        setStatus("No trimmed result returned.");
+        return;
+      }
+      range.insertText(trimmed, Word.InsertLocation.replace);
+      await context.sync();
+      setStatus("Selection trimmed.");
+    });
+  } catch (err: any) {
+    setStatus(`Error: ${err?.message || err}`);
+  } finally {
+    setBusy(false);
+  }
+}
+
+export async function paraphraseSelection() {
+  setStatus("Paraphrasing selection...");
+  setBusy(true);
+  try {
+    await Word.run(async (context) => {
+      const range = context.document.getSelection();
+      range.load(["text"]);
+      await context.sync();
+      const text = (range.text || "").trim();
+      if (!text) {
+        setStatus("No selection found.");
+        return;
+      }
+      const variants = await generateParaphrasedText(text, 1);
+      const first = variants[0];
+      if (!first) {
+        setStatus("No paraphrase returned.");
+        return;
+      }
+      range.insertText(first, Word.InsertLocation.replace);
+      await context.sync();
+      setStatus("Paraphrased selection.");
+    });
+  } catch (err: any) {
+    setStatus(`Error: ${err?.message || err}`);
+  } finally {
+    setBusy(false);
+  }
+}
+
 export async function insertSummaryReport() {
   await Word.run(async (context) => {
     if (!lastComments.length && !lastSummary) {
@@ -329,6 +395,10 @@ Office.onReady((info) => {
     if (againBtn) againBtn.onclick = reviewAgain;
     const sumBtn = document.getElementById("btn-generate-summary");
     if (sumBtn) sumBtn.onclick = insertSummaryReport;
+    const trimBtn = document.getElementById("btn-trim-selection");
+    if (trimBtn) trimBtn.onclick = trimSelection;
+    const paraBtn = document.getElementById("btn-paraphrase-selection");
+    if (paraBtn) paraBtn.onclick = paraphraseSelection;
 
     // Accordion toggle for Connection section
     const acc = document.getElementById("connection-accordion");
