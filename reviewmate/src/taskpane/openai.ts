@@ -208,12 +208,21 @@ async function callSimpleCompletion(prompt: string, settings?: Partial<ApiSettin
 export async function generateTrimmedText(
   input: string,
   maxChars: number = 0,
+  style: string = "default",
   settings?: Partial<ApiSettings>
 ): Promise<string> {
-  const target = maxChars && maxChars > 50 ? `Limit to about ${maxChars} characters (not strict).` : "Keep concise.";
+  const target = maxChars && maxChars > 50 ? `Aim for about ${maxChars} characters (not strict).` : "Keep concise.";
+  const tone =
+    style === "simpler"
+      ? "Use simpler vocabulary while retaining accuracy."
+      : style === "formal"
+        ? "Maintain a formal, scholarly tone."
+        : style === "concise"
+          ? "Prefer brevity and remove redundancy."
+          : "Maintain clarity and neutral professional tone.";
   const prompt = [
     "Rewrite the following text into a significantly shorter version while preserving all essential meaning and intent.",
-    "Maintain clarity and formal academic tone.",
+    tone,
     target,
     "Return only the rewritten text. No preface or explanation.",
     input,
@@ -224,12 +233,20 @@ export async function generateTrimmedText(
 export async function generateParaphrasedText(
   input: string,
   variants: number = 1,
+  style: string = "default",
   settings?: Partial<ApiSettings>
 ): Promise<string[]> {
   const n = Math.min(Math.max(variants, 1), 3);
   const prompt = [
     `Paraphrase the following text into ${n} distinct high-quality alternative version(s).`,
-    "Each version must retain the original meaning, maintain a clear academic/professional tone, and vary BOTH wording and sentence structure.",
+    "Each version must retain the original meaning and vary BOTH wording and sentence structure.",
+    style === "simpler"
+      ? "Use simpler vocabulary while preserving meaning."
+      : style === "formal"
+        ? "Adopt a formal scholarly tone."
+        : style === "concise"
+          ? "Prefer concise, tight phrasing."
+          : "Maintain a neutral professional tone.",
     "Output format:",
     "Variant 1: <first paraphrase on same line>",
     "Variant 2: <second paraphrase on same line> (etc)",

@@ -257,7 +257,17 @@ export async function trimSelection() {
         setStatus("No selection found.");
         return;
       }
-      const trimmed = await generateTrimmedText(text);
+      const slider = document.getElementById("trim-length") as any;
+      const toneSel = document.getElementById("tone-style") as any;
+      let maxChars = 0;
+      if (slider) {
+        const pct = parseInt(slider.value, 10) || 0;
+        if (pct > 0 && pct <= 100) {
+          maxChars = Math.max(Math.round((text.length * pct) / 100), 20);
+        }
+      }
+      const style = (toneSel && toneSel.value) || "default";
+      const trimmed = await generateTrimmedText(text, maxChars, style);
       if (!trimmed) {
         setStatus("No trimmed result returned.");
         return;
@@ -286,7 +296,9 @@ export async function paraphraseSelection() {
         setStatus("No selection found.");
         return;
       }
-      const variants = await generateParaphrasedText(text, 1);
+      const toneSel = document.getElementById("tone-style") as any;
+      const style = (toneSel && toneSel.value) || "default";
+      const variants = await generateParaphrasedText(text, 1, style);
       const first = variants[0];
       if (!first) {
         setStatus("No paraphrase returned.");
@@ -399,6 +411,16 @@ Office.onReady((info) => {
     if (trimBtn) trimBtn.onclick = trimSelection;
     const paraBtn = document.getElementById("btn-paraphrase-selection");
     if (paraBtn) paraBtn.onclick = paraphraseSelection;
+    const trimSlider = document.getElementById("trim-length") as any;
+    const trimValue = document.getElementById("trim-length-value");
+    if (trimSlider && trimValue) {
+      const update = () => {
+        const v = parseInt(trimSlider.value, 10) || 0;
+        trimValue.textContent = v > 0 ? `${v}%` : "auto";
+      };
+      trimSlider.oninput = update;
+      update();
+    }
 
     // Accordion toggle for Connection section
     const acc = document.getElementById("connection-accordion");

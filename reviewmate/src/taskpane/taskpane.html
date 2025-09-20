@@ -107,6 +107,20 @@
                     <label for="custom-instructions" class="label">Additional instructions (optional)</label>
                     <textarea id="custom-instructions" class="input text" rows="3" title="Additional instructions"></textarea>
                 </div>
+                <div class="field">
+                    <label for="trim-length" class="label">Trim target length: <span id="trim-length-value" aria-live="polite"></span></label>
+                    <input id="trim-length" type="range" min="0" max="100" value="0" class="input" />
+                    <div class="help">0 = auto; otherwise approximate percentage of original length to aim for.</div>
+                </div>
+                <div class="field">
+                    <label for="tone-style" class="label">Language style</label>
+                    <select id="tone-style" class="input">
+                        <option value="default">Default</option>
+                        <option value="simpler">Simpler</option>
+                        <option value="formal">More formal</option>
+                        <option value="concise">More concise</option>
+                    </select>
+                </div>
             </div>
         </section>
 

@@ -143,6 +143,7 @@ b {
     transition: border-color .15s ease, box-shadow .15s ease;
 }
 .input.text { min-height: 72px; /* resize not supported in IE; omit */ }
+.input[type=range] { padding: 0; height: 24px; }
 .input:focus { outline: none; border-color: #0078d4; box-shadow: 0 0 0 2px rgba(0,120,212,.2); }
 
 .inline { display: -ms-flexbox; display: flex; -ms-flex-direction: row; flex-direction: row; }
